@@ -32,9 +32,10 @@ const ASSET_FIELDS: InputField[] = [
   { key: "business", label: "Business Goods", sublabel: "Inventory & trade goods value" },
 ];
 
-function formatAmount(val: number, symbol: string) {
+function formatAmount(val: number, symbol: string, currencyCode: string = "USD") {
   if (val === 0) return `${symbol}0`;
-  return `${symbol}${val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const locale = currencyCode === "INR" ? "en-IN" : "en-US";
+  return `${symbol}${val.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 const Index = () => {
@@ -276,7 +277,8 @@ const Index = () => {
                                 formatAmount(
                                   ((parseFloat(calculatorInputs.goldWeight) || 0) * (calculatorInputs.goldUnit === 'tola' ? 11.664 : 1) * (goldPerGram || 0)) +
                                   ((parseFloat(calculatorInputs.silverWeight) || 0) * (calculatorInputs.silverUnit === 'tola' ? 11.664 : 1) * (silverPerGram || 0)),
-                                  ""
+                                  "",
+                                  currencyCode
                                 )
                               }
                             </span>
@@ -350,7 +352,8 @@ const Index = () => {
                               {currency.symbol}{
                                 formatAmount(
                                   ((parseFloat(cashInputs.hand) || 0) + (parseFloat(cashInputs.bank) || 0) + (parseFloat(cashInputs.other) || 0)),
-                                  ""
+                                  "",
+                                  currencyCode
                                 )
                               }
                             </span>
@@ -411,7 +414,8 @@ const Index = () => {
                               {currency.symbol}{
                                 formatAmount(
                                   ((parseFloat(stockInputs.shares) || 0) * (parseFloat(stockInputs.price) || 0)),
-                                  ""
+                                  "",
+                                  currencyCode
                                 )
                               }
                             </span>
@@ -443,7 +447,7 @@ const Index = () => {
             >
               <span className="text-sm font-semibold text-foreground">Total Assets</span>
               <span className="text-accent font-bold text-base">
-                {formatAmount(totalAssets, currency.symbol)}
+                {formatAmount(totalAssets, currency.symbol, currencyCode)}
               </span>
             </div>
           </div>
@@ -516,7 +520,7 @@ const Index = () => {
               <p className="text-foreground/70 text-xs">Assets − Debts</p>
             </div>
             <span className="text-foreground font-bold text-xl">
-              {formatAmount(netValue, currency.symbol)}
+              {formatAmount(netValue, currency.symbol, currencyCode)}
             </span>
           </div>
         </div>
@@ -535,7 +539,7 @@ const Index = () => {
                 {isObligatory ? "Zakat is Obligatory on You" : "You have not yet reached Nisab"}
               </p>
               <p className="text-muted-foreground text-xs mt-1">
-                Nisab ({currency.code}): {formatAmount(nisabThreshold, currency.symbol)}
+                Nisab ({currency.code}): {formatAmount(nisabThreshold, currency.symbol, currencyCode)}
                 {silverPerGram != null && (
                   <span className="block opacity-70 mt-0.5">
                     Silver nisab: {NISAB_SILVER_GRAMS}g × {currency.symbol}{silverPerGram.toFixed(3)}/g — live rate applied
@@ -563,7 +567,7 @@ const Index = () => {
           >
             <p className="text-accent/70 text-xs tracking-[0.25em] uppercase mb-1">Your Zakat Due</p>
             <p className="gold-text text-4xl md:text-5xl font-bold my-3">
-              {formatAmount(zakatDue, currency.symbol)}
+              {formatAmount(zakatDue, currency.symbol, currencyCode)}
             </p>
             <p className="text-muted-foreground text-xs">2.5% of your net zakatable wealth</p>
 
@@ -571,19 +575,19 @@ const Index = () => {
             <div className="mt-5 space-y-2 text-sm border-t border-gold/20 pt-4">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total Assets</span>
-                <span className="text-foreground">{formatAmount(totalAssets, currency.symbol)}</span>
+                <span className="text-foreground">{formatAmount(totalAssets, currency.symbol, currencyCode)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total Debts</span>
-                <span className="text-foreground">− {formatAmount(totalDebts, currency.symbol)}</span>
+                <span className="text-foreground">− {formatAmount(totalDebts, currency.symbol, currencyCode)}</span>
               </div>
               <div className="flex justify-between border-t border-gold/20 pt-2">
                 <span className="text-foreground font-medium">Net Zakatable Wealth</span>
-                <span className="text-foreground font-medium">{formatAmount(netValue, currency.symbol)}</span>
+                <span className="text-foreground font-medium">{formatAmount(netValue, currency.symbol, currencyCode)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-accent font-semibold">Zakat (2.5%)</span>
-                <span className="text-accent font-bold">{formatAmount(zakatDue, currency.symbol)}</span>
+                <span className="text-accent font-bold">{formatAmount(zakatDue, currency.symbol, currencyCode)}</span>
               </div>
             </div>
           </div>
