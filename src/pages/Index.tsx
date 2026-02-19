@@ -38,6 +38,16 @@ function formatAmount(val: number, symbol: string, currencyCode: string = "USD")
   return `${symbol}${val.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+const parseValue = (val: string) => parseFloat(val.replace(/,/g, "")) || 0;
+
+const formatInputVal = (val: string, currencyCode: string) => {
+  if (!val) return "";
+  const num = parseValue(val);
+  if (num === 0 && val.trim() === "") return "";
+  const locale = currencyCode === "INR" ? "en-IN" : "en-US";
+  return num.toLocaleString(locale, { maximumFractionDigits: 2 });
+};
+
 const Index = () => {
   const [currencyCode, setCurrencyCode] = useState("INR");
   const [assets, setAssets] = useState<Record<string, string>>({
@@ -81,9 +91,9 @@ const Index = () => {
   }, []);
 
   const totalAssets = ASSET_FIELDS.reduce(
-    (sum, f) => sum + (parseFloat(assets[f.key]) || 0), 0
+    (sum, f) => sum + (parseValue(assets[f.key]) || 0), 0
   );
-  const totalDebts = parseFloat(debts) || 0;
+  const totalDebts = parseValue(debts) || 0;
   const netValue = Math.max(0, totalAssets - totalDebts);
 
   const isObligatory = nisabThreshold != null ? netValue >= nisabThreshold : false;
@@ -200,11 +210,18 @@ const Index = () => {
                     {currency.symbol}
                   </span>
                   <input
-                    type="number"
-                    min="0"
-                    placeholder="0.00"
+                    type="text"
+                    inputMode="decimal"
+                    placeholder="0"
                     value={assets[field.key]}
-                    onChange={(e) => handleAsset(field.key, e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (/^[\d,.]*$/.test(val)) {
+                        handleAsset(field.key, val);
+                      }
+                    }}
+                    onFocus={(e) => handleAsset(field.key, parseValue(e.target.value).toString() === "0" ? "" : parseValue(e.target.value).toString())}
+                    onBlur={(e) => handleAsset(field.key, formatInputVal(e.target.value, currencyCode))}
                     className="gold-input w-full rounded-lg py-2.5 pl-8 pr-4 text-sm"
                   />
                 </div>
@@ -324,7 +341,11 @@ const Index = () => {
                             min="0"
                             placeholder="Cash in Hand"
                             value={cashInputs.hand}
-                            onChange={(e) => setCashInputs(prev => ({ ...prev, hand: e.target.value }))}
+                            onChange={(e) => {
+                              if (/^[\d,.]*$/.test(e.target.value)) setCashInputs(prev => ({ ...prev, hand: e.target.value }))
+                            }}
+                            onFocus={(e) => setCashInputs(prev => ({ ...prev, hand: parseValue(e.target.value).toString() === "0" ? "" : parseValue(e.target.value).toString() }))}
+                            onBlur={(e) => setCashInputs(prev => ({ ...prev, hand: formatInputVal(e.target.value, currencyCode) }))}
                             className="bg-background border border-navy-border rounded px-2 py-1.5 text-xs w-full"
                           />
                           <input
@@ -332,7 +353,11 @@ const Index = () => {
                             min="0"
                             placeholder="Bank Balance"
                             value={cashInputs.bank}
-                            onChange={(e) => setCashInputs(prev => ({ ...prev, bank: e.target.value }))}
+                            onChange={(e) => {
+                              if (/^[\d,.]*$/.test(e.target.value)) setCashInputs(prev => ({ ...prev, bank: e.target.value }))
+                            }}
+                            onFocus={(e) => setCashInputs(prev => ({ ...prev, bank: parseValue(e.target.value).toString() === "0" ? "" : parseValue(e.target.value).toString() }))}
+                            onBlur={(e) => setCashInputs(prev => ({ ...prev, bank: formatInputVal(e.target.value, currencyCode) }))}
                             className="bg-background border border-navy-border rounded px-2 py-1.5 text-xs w-full"
                           />
                           <input
@@ -340,7 +365,11 @@ const Index = () => {
                             min="0"
                             placeholder="Other Savings"
                             value={cashInputs.other}
-                            onChange={(e) => setCashInputs(prev => ({ ...prev, other: e.target.value }))}
+                            onChange={(e) => {
+                              if (/^[\d,.]*$/.test(e.target.value)) setCashInputs(prev => ({ ...prev, other: e.target.value }))
+                            }}
+                            onFocus={(e) => setCashInputs(prev => ({ ...prev, other: parseValue(e.target.value).toString() === "0" ? "" : parseValue(e.target.value).toString() }))}
+                            onBlur={(e) => setCashInputs(prev => ({ ...prev, other: formatInputVal(e.target.value, currencyCode) }))}
                             className="bg-background border border-navy-border rounded px-2 py-1.5 text-xs w-full"
                           />
                         </div>
@@ -351,7 +380,7 @@ const Index = () => {
                             <span className="text-accent font-semibold">
                               {currency.symbol}{
                                 formatAmount(
-                                  ((parseFloat(cashInputs.hand) || 0) + (parseFloat(cashInputs.bank) || 0) + (parseFloat(cashInputs.other) || 0)),
+                                  ((parseValue(cashInputs.hand) || 0) + (parseValue(cashInputs.bank) || 0) + (parseValue(cashInputs.other) || 0)),
                                   "",
                                   currencyCode
                                 )
@@ -360,7 +389,7 @@ const Index = () => {
                           </div>
                           <button
                             onClick={() => {
-                              const total = ((parseFloat(cashInputs.hand) || 0) + (parseFloat(cashInputs.bank) || 0) + (parseFloat(cashInputs.other) || 0));
+                              const total = ((parseValue(cashInputs.hand) || 0) + (parseValue(cashInputs.bank) || 0) + (parseValue(cashInputs.other) || 0));
                               handleAsset("cash", total.toFixed(2));
                             }}
                             className="bg-accent/10 hover:bg-accent/20 text-accent text-xs px-3 py-1.5 rounded transition-colors"
@@ -402,7 +431,11 @@ const Index = () => {
                             min="0"
                             placeholder="Price per Share"
                             value={stockInputs.price}
-                            onChange={(e) => setStockInputs(prev => ({ ...prev, price: e.target.value }))}
+                            onChange={(e) => {
+                              if (/^[\d,.]*$/.test(e.target.value)) setStockInputs(prev => ({ ...prev, price: e.target.value }))
+                            }}
+                            onFocus={(e) => setStockInputs(prev => ({ ...prev, price: parseValue(e.target.value).toString() === "0" ? "" : parseValue(e.target.value).toString() }))}
+                            onBlur={(e) => setStockInputs(prev => ({ ...prev, price: formatInputVal(e.target.value, currencyCode) }))}
                             className="bg-background border border-navy-border rounded px-2 py-1.5 text-xs w-full"
                           />
                         </div>
@@ -413,7 +446,7 @@ const Index = () => {
                             <span className="text-accent font-semibold">
                               {currency.symbol}{
                                 formatAmount(
-                                  ((parseFloat(stockInputs.shares) || 0) * (parseFloat(stockInputs.price) || 0)),
+                                  ((parseFloat(stockInputs.shares) || 0) * (parseValue(stockInputs.price) || 0)),
                                   "",
                                   currencyCode
                                 )
@@ -422,7 +455,7 @@ const Index = () => {
                           </div>
                           <button
                             onClick={() => {
-                              const total = ((parseFloat(stockInputs.shares) || 0) * (parseFloat(stockInputs.price) || 0));
+                              const total = ((parseFloat(stockInputs.shares) || 0) * (parseValue(stockInputs.price) || 0));
                               handleAsset("investments", total.toFixed(2));
                             }}
                             className="bg-accent/10 hover:bg-accent/20 text-accent text-xs px-3 py-1.5 rounded transition-colors"
@@ -488,11 +521,18 @@ const Index = () => {
                 {currency.symbol}
               </span>
               <input
-                type="number"
-                min="0"
-                placeholder="0.00"
+                type="text"
+                inputMode="decimal"
+                placeholder="0"
                 value={debts}
-                onChange={(e) => setDebts(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (/^[\d,.]*$/.test(val)) {
+                    setDebts(val);
+                  }
+                }}
+                onFocus={(e) => setDebts(parseValue(e.target.value).toString() === "0" ? "" : parseValue(e.target.value).toString())}
+                onBlur={(e) => setDebts(formatInputVal(e.target.value, currencyCode))}
                 className="gold-input w-full rounded-lg py-2.5 pl-8 pr-4 text-sm"
               />
             </div>
