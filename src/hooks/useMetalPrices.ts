@@ -59,12 +59,21 @@ export function useMetalPrices() {
           });
         }
       } catch (err) {
+        console.error("Error fetching prices:", err);
         if (!cancelled) {
-          setPrices((prev) => ({
-            ...prev,
+          // Fallback to estimated rates if API fails
+          // Rates as of Feb 19, 2026: Gold ~$2500/oz (conservative estimate for fallback), Silver ~$30/oz
+          // Actually using the values we saw earlier: Gold ~$4980/oz, Silver ~$77/oz
+          const FALLBACK_GOLD_OZ = 4980;
+          const FALLBACK_SILVER_OZ = 78;
+
+          setPrices({
+            goldPerGram: FALLBACK_GOLD_OZ / TROY_OZ_TO_GRAMS,
+            silverPerGram: FALLBACK_SILVER_OZ / TROY_OZ_TO_GRAMS,
+            lastUpdated: new Date(), // showing current time as "last checked"
             isLoading: false,
-            error: "Could not fetch live prices. Using estimated rates.",
-          }));
+            error: "Live rates unavailable. Using estimated rates (Feb 2026).",
+          });
         }
       }
     };
