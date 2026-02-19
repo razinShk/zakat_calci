@@ -51,6 +51,13 @@ const Index = () => {
     silverUnit: "g" as "g" | "tola",
   });
 
+  // Helper Calculator States
+  const [cashCalculatorOpen, setCashCalculatorOpen] = useState(false);
+  const [cashInputs, setCashInputs] = useState({ hand: "", bank: "", other: "" });
+
+  const [stockCalculatorOpen, setStockCalculatorOpen] = useState(false);
+  const [stockInputs, setStockInputs] = useState({ shares: "", price: "" });
+
   const { prices, convertTo } = useMetalPrices();
   const currency = CURRENCIES.find((c) => c.code === currencyCode)!;
   const rate = USD_RATES[currencyCode] ?? 1;
@@ -289,6 +296,136 @@ const Index = () => {
                         {(!goldPerGram && !silverPerGram) && (
                           <p className="text-[10px] text-red-400">Live prices unavailable. Cannot calculate.</p>
                         )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Cash Breakdown Tool */}
+                {field.key === "cash" && (
+                  <div className="mt-3 bg-navy-elevated/50 rounded-lg p-3 border border-navy-border/50">
+                    <button
+                      onClick={() => setCashCalculatorOpen(!cashCalculatorOpen)}
+                      className="text-xs text-accent flex items-center gap-1.5 hover:text-accent/80 transition-colors w-full"
+                    >
+                      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05 1.18 1.91 2.53 1.91 1.38 0 2.66-.84 2.66-2.12 0-1.27-1.07-1.63-2.67-2-1.6-.37-3.23-.71-3.23-3.02 0-1.87 1.29-2.96 3.01-3.29V4h2.67v1.92c1.38.32 2.79 1.16 2.96 3.12h-1.92c-.12-.72-.88-1.54-2.35-1.54-1.3 0-2.23.84-2.23 1.91 0 1.27 1.07 1.63 2.66 2 1.6.36 3.25.73 3.25 3.02 0 1.98-1.43 3.12-3.35 3.32z" />
+                      </svg>
+                      {cashCalculatorOpen ? "Hide Breakdown" : "Cash Breakdown"}
+                    </button>
+
+                    {cashCalculatorOpen && (
+                      <div className="mt-3 space-y-3 animate-fade-in-up">
+                        <div className="grid grid-cols-1 gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="Cash in Hand"
+                            value={cashInputs.hand}
+                            onChange={(e) => setCashInputs(prev => ({ ...prev, hand: e.target.value }))}
+                            className="bg-background border border-navy-border rounded px-2 py-1.5 text-xs w-full"
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="Bank Balance"
+                            value={cashInputs.bank}
+                            onChange={(e) => setCashInputs(prev => ({ ...prev, bank: e.target.value }))}
+                            className="bg-background border border-navy-border rounded px-2 py-1.5 text-xs w-full"
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="Other Savings"
+                            value={cashInputs.other}
+                            onChange={(e) => setCashInputs(prev => ({ ...prev, other: e.target.value }))}
+                            className="bg-background border border-navy-border rounded px-2 py-1.5 text-xs w-full"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-navy-border/30">
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">Total: </span>
+                            <span className="text-accent font-semibold">
+                              {currency.symbol}{
+                                formatAmount(
+                                  ((parseFloat(cashInputs.hand) || 0) + (parseFloat(cashInputs.bank) || 0) + (parseFloat(cashInputs.other) || 0)),
+                                  ""
+                                )
+                              }
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const total = ((parseFloat(cashInputs.hand) || 0) + (parseFloat(cashInputs.bank) || 0) + (parseFloat(cashInputs.other) || 0));
+                              handleAsset("cash", total.toFixed(2));
+                            }}
+                            className="bg-accent/10 hover:bg-accent/20 text-accent text-xs px-3 py-1.5 rounded transition-colors"
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Stock Value Calculator */}
+                {field.key === "investments" && (
+                  <div className="mt-3 bg-navy-elevated/50 rounded-lg p-3 border border-navy-border/50">
+                    <button
+                      onClick={() => setStockCalculatorOpen(!stockCalculatorOpen)}
+                      className="text-xs text-accent flex items-center gap-1.5 hover:text-accent/80 transition-colors w-full"
+                    >
+                      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M7 11h2v2H7zm0 4h2v2H7zm4-4h2v2h-2zm4 0h2v2h-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 15H5V8h14v11z" />
+                      </svg>
+                      {stockCalculatorOpen ? "Hide Calculator" : "Calculate Stock Value"}
+                    </button>
+
+                    {stockCalculatorOpen && (
+                      <div className="mt-3 space-y-3 animate-fade-in-up">
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="No. of Shares"
+                            value={stockInputs.shares}
+                            onChange={(e) => setStockInputs(prev => ({ ...prev, shares: e.target.value }))}
+                            className="bg-background border border-navy-border rounded px-2 py-1.5 text-xs w-full"
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="Price per Share"
+                            value={stockInputs.price}
+                            onChange={(e) => setStockInputs(prev => ({ ...prev, price: e.target.value }))}
+                            className="bg-background border border-navy-border rounded px-2 py-1.5 text-xs w-full"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-navy-border/30">
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">Total: </span>
+                            <span className="text-accent font-semibold">
+                              {currency.symbol}{
+                                formatAmount(
+                                  ((parseFloat(stockInputs.shares) || 0) * (parseFloat(stockInputs.price) || 0)),
+                                  ""
+                                )
+                              }
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const total = ((parseFloat(stockInputs.shares) || 0) * (parseFloat(stockInputs.price) || 0));
+                              handleAsset("investments", total.toFixed(2));
+                            }}
+                            className="bg-accent/10 hover:bg-accent/20 text-accent text-xs px-3 py-1.5 rounded transition-colors"
+                          >
+                            Apply
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
