@@ -43,6 +43,13 @@ const Index = () => {
     gold: "", cash: "", investments: "", business: "",
   });
   const [debts, setDebts] = useState("");
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
+  const [calculatorInputs, setCalculatorInputs] = useState({
+    goldWeight: "",
+    goldUnit: "g" as "g" | "tola",
+    silverWeight: "",
+    silverUnit: "g" as "g" | "tola",
+  });
 
   const { prices, convertTo } = useMetalPrices();
   const currency = CURRENCIES.find((c) => c.code === currencyCode)!;
@@ -193,6 +200,99 @@ const Index = () => {
                     className="gold-input w-full rounded-lg py-2.5 pl-8 pr-4 text-sm"
                   />
                 </div>
+
+                {/* Gold/Silver Calculator */}
+                {field.key === "gold" && (
+                  <div className="mt-3 bg-navy-elevated/50 rounded-lg p-3 border border-navy-border/50">
+                    <button
+                      onClick={() => setCalculatorOpen(!calculatorOpen)}
+                      className="text-xs text-accent flex items-center gap-1.5 hover:text-accent/80 transition-colors w-full"
+                    >
+                      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 3H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2V5c0-1.103-.897-2-2-2zM5 19V5h14l.002 14H5z" /><path d="M7 7h10v2H7zm0 4h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm-8 4h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z" />
+                      </svg>
+                      {calculatorOpen ? "Hide Calculator" : "Calculate from Weight"}
+                    </button>
+
+                    {calculatorOpen && (
+                      <div className="mt-3 space-y-3 animate-fade-in-up">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Gold Weight</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder="0"
+                                value={calculatorInputs.goldWeight}
+                                onChange={(e) => setCalculatorInputs(prev => ({ ...prev, goldWeight: e.target.value }))}
+                                className="w-full bg-background border border-navy-border rounded px-2 py-1.5 text-xs"
+                              />
+                              <select
+                                value={calculatorInputs.goldUnit}
+                                onChange={(e) => setCalculatorInputs(prev => ({ ...prev, goldUnit: e.target.value as "g" | "tola" }))}
+                                className="bg-background border border-navy-border rounded px-1 py-1.5 text-xs text-muted-foreground"
+                              >
+                                <option value="g">g</option>
+                                <option value="tola">Tola</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Silver Weight</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                min="0"
+                                placeholder="0"
+                                value={calculatorInputs.silverWeight}
+                                onChange={(e) => setCalculatorInputs(prev => ({ ...prev, silverWeight: e.target.value }))}
+                                className="w-full bg-background border border-navy-border rounded px-2 py-1.5 text-xs"
+                              />
+                              <select
+                                value={calculatorInputs.silverUnit}
+                                onChange={(e) => setCalculatorInputs(prev => ({ ...prev, silverUnit: e.target.value as "g" | "tola" }))}
+                                className="bg-background border border-navy-border rounded px-1 py-1.5 text-xs text-muted-foreground"
+                              >
+                                <option value="g">g</option>
+                                <option value="tola">Tola</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-navy-border/30">
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">Total: </span>
+                            <span className="text-accent font-semibold">
+                              {currency.symbol}{
+                                formatAmount(
+                                  ((parseFloat(calculatorInputs.goldWeight) || 0) * (calculatorInputs.goldUnit === 'tola' ? 11.664 : 1) * (goldPerGram || 0)) +
+                                  ((parseFloat(calculatorInputs.silverWeight) || 0) * (calculatorInputs.silverUnit === 'tola' ? 11.664 : 1) * (silverPerGram || 0)),
+                                  ""
+                                )
+                              }
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const goldVal = ((parseFloat(calculatorInputs.goldWeight) || 0) * (calculatorInputs.goldUnit === 'tola' ? 11.664 : 1) * (goldPerGram || 0));
+                              const silverVal = ((parseFloat(calculatorInputs.silverWeight) || 0) * (calculatorInputs.silverUnit === 'tola' ? 11.664 : 1) * (silverPerGram || 0));
+                              handleAsset("gold", (goldVal + silverVal).toFixed(2));
+                            }}
+                            className="bg-accent/10 hover:bg-accent/20 text-accent text-xs px-3 py-1.5 rounded transition-colors"
+                            disabled={!goldPerGram && !silverPerGram}
+                          >
+                            Apply
+                          </button>
+                        </div>
+                        {(!goldPerGram && !silverPerGram) && (
+                          <p className="text-[10px] text-red-400">Live prices unavailable. Cannot calculate.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {i < ASSET_FIELDS.length - 1 && (
                   <div className="mt-3 border-t border-navy-border/50" />
                 )}
