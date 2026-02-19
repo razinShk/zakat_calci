@@ -34,18 +34,16 @@ export function useMetalPrices() {
 
     const fetchPrices = async () => {
       try {
-        // data-asg.goldprice.org provides free real-time spot prices
+        // 1. Try Primary API: data-asg.goldprice.org
         const res = await fetch("https://data-asg.goldprice.org/dbXRates/USD", {
           headers: { Accept: "application/json" },
         });
 
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) throw new Error(`Primary API HTTP ${res.status}`);
 
-        // Response format: { items: [{ xauPrice: number, xagPrice: number, ... }] }
         const data = await res.json();
         const spot = data.items[0];
 
-        // Prices come in USD per troy oz
         const goldPerGram = spot.xauPrice / TROY_OZ_TO_GRAMS;
         const silverPerGram = spot.xagPrice / TROY_OZ_TO_GRAMS;
 
@@ -59,21 +57,50 @@ export function useMetalPrices() {
           });
         }
       } catch (err) {
-        console.error("Error fetching prices:", err);
-        if (!cancelled) {
-          // Fallback to estimated rates if API fails
-          // Rates as of Feb 19, 2026: Gold ~$2500/oz (conservative estimate for fallback), Silver ~$30/oz
-          // Actually using the values we saw earlier: Gold ~$4980/oz, Silver ~$77/oz
-          const FALLBACK_GOLD_OZ = 4980;
-          const FALLBACK_SILVER_OZ = 78;
+        console.warn("Primary API failed, trying secondary...", err);
 
-          setPrices({
-            goldPerGram: FALLBACK_GOLD_OZ / TROY_OZ_TO_GRAMS,
-            silverPerGram: FALLBACK_SILVER_OZ / TROY_OZ_TO_GRAMS,
-            lastUpdated: new Date(), // showing current time as "last checked"
-            isLoading: false,
-            error: "Live rates unavailable. Using estimated rates (Feb 2026).",
-          });
+        try {
+          // 2. Try Secondary API: api.gold-api.com
+          // We need separate calls for Gold (XAU) and Silver (XAG)
+          const [goldRes, silverRes] = await Promise.all([
+            fetch("https://api.gold-api.com/price/XAU"),
+            fetch("https://api.gold-api.com/price/XAG")
+          ]);
+
+          if (!goldRes.ok || !silverRes.ok) throw new Error("Secondary API failed");
+
+          const goldData = await goldRes.json();
+          const silverData = await silverRes.json();
+
+          const goldPerGram = goldData.price / TROY_OZ_TO_GRAMS;
+          const silverPerGram = silverData.price / TROY_OZ_TO_GRAMS;
+
+          if (!cancelled) {
+            setPrices({
+              goldPerGram,
+              silverPerGram,
+              lastUpdated: new Date(),
+              isLoading: false,
+              error: null, // Successfully fetched from secondary, so no error to show
+            });
+          }
+        } catch (secErr) {
+          console.error("Secondary API also failed, using fallback:", secErr);
+
+          if (!cancelled) {
+            // 3. Last Resort: Fallback to estimated rates
+            // Rates as of Feb 19, 2026
+            const FALLBACK_GOLD_OZ = 4980;
+            const FALLBACK_SILVER_OZ = 78;
+
+            setPrices({
+              goldPerGram: FALLBACK_GOLD_OZ / TROY_OZ_TO_GRAMS,
+              silverPerGram: FALLBACK_SILVER_OZ / TROY_OZ_TO_GRAMS,
+              lastUpdated: new Date("2026-02-19T13:00:00"), // showing fallback date
+              isLoading: false,
+              error: "Live rates unavailable. Using estimated rates (Feb 2026).",
+            });
+          }
         }
       }
     };
