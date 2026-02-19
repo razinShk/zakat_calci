@@ -18,6 +18,7 @@ export type MetalPrices = {
   lastUpdated: Date | null;
   isLoading: boolean;
   error: string | null;
+  source: string;
 };
 
 export function useMetalPrices() {
@@ -27,6 +28,7 @@ export function useMetalPrices() {
     lastUpdated: null,
     isLoading: true,
     error: null,
+    source: "",
   });
 
   useEffect(() => {
@@ -54,6 +56,7 @@ export function useMetalPrices() {
             lastUpdated: new Date(),
             isLoading: false,
             error: null,
+            source: "data-asg.goldprice.org",
           });
         }
       } catch (err) {
@@ -82,6 +85,7 @@ export function useMetalPrices() {
               lastUpdated: new Date(),
               isLoading: false,
               error: null, // Successfully fetched from secondary, so no error to show
+              source: "api.gold-api.com",
             });
           }
         } catch (secErr) {
@@ -99,6 +103,7 @@ export function useMetalPrices() {
               lastUpdated: new Date("2026-02-19T13:00:00"), // showing fallback date
               isLoading: false,
               error: "Live rates unavailable. Using estimated rates (Feb 2026).",
+              source: "Estimated Rates",
             });
           }
         }

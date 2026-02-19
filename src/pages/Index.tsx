@@ -38,7 +38,7 @@ function formatAmount(val: number, symbol: string) {
 }
 
 const Index = () => {
-  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [currencyCode, setCurrencyCode] = useState("INR");
   const [assets, setAssets] = useState<Record<string, string>>({
     gold: "", cash: "", investments: "", business: "",
   });
@@ -135,7 +135,7 @@ const Index = () => {
               )}
               {prices.lastUpdated && (
                 <span className="text-xs text-muted-foreground/60">
-                  Updated {prices.lastUpdated.toLocaleTimeString()}
+                  Updated {prices.lastUpdated.toLocaleString()}
                 </span>
               )}
             </div>
@@ -525,7 +525,7 @@ const Index = () => {
             </div>
 
             <p className="text-muted-foreground/40 text-[10px] mt-4">
-              Spot prices sourced from data-asg.goldprice.org · Refreshed every 5 minutes
+              Spot prices sourced from {prices.source || "Loading..."} · Refreshed every 5 minutes
             </p>
           </div>
         </div>
