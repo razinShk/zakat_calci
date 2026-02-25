@@ -36,27 +36,43 @@ export function useMetalPrices() {
 
     const fetchPrices = async () => {
       try {
-        // 1. Try Primary API: data-asg.goldprice.org
-        const res = await fetch("https://data-asg.goldprice.org/dbXRates/USD", {
-          headers: { Accept: "application/json" },
-        });
+        // 1. Try Primary API: freegoldapi.com (provides Gold price per Ounce in USD)
+        const res = await fetch("https://freegoldapi.com/data/latest.json");
 
         if (!res.ok) throw new Error(`Primary API HTTP ${res.status}`);
 
         const data = await res.json();
-        const spot = data.items[0];
 
-        const goldPerGram = spot.xauPrice / TROY_OZ_TO_GRAMS;
-        const silverPerGram = spot.xagPrice / TROY_OZ_TO_GRAMS;
+        // Get the latest record (last item in the array)
+        const latest = data[data.length - 1];
+
+        // Price is provided per Ounce in USD. Convert to per Gram.
+        const goldPerGram = latest.price / TROY_OZ_TO_GRAMS;
+
+        // Since freegoldapi.com only provides Gold, we fetch Silver from the secondary API
+        // or calculate it using a standard Gold/Silver ratio (e.g., ~1/86) as a fallback.
+        let silverPerGram = 0;
+        try {
+          const silverRes = await fetch("https://api.gold-api.com/price/XAG");
+          if (silverRes.ok) {
+            const silverData = await silverRes.json();
+            silverPerGram = silverData.price / TROY_OZ_TO_GRAMS;
+          } else {
+            throw new Error("Secondary silver API failed");
+          }
+        } catch (silverErr) {
+          console.warn("Falling back to computed silver ratio", silverErr);
+          silverPerGram = goldPerGram / 86; // Approximate historical ratio
+        }
 
         if (!cancelled) {
           setPrices({
             goldPerGram,
             silverPerGram,
-            lastUpdated: new Date(),
+            lastUpdated: new Date(latest.date), // Use date from the API
             isLoading: false,
             error: null,
-            source: "data-asg.goldprice.org",
+            source: latest.source.includes("yahoo_finance") ? "Yahoo Finance (via FreeGoldAPI)" : "FreeGoldAPI",
           });
         }
       } catch (err) {
@@ -123,7 +139,16 @@ export function useMetalPrices() {
   // Helper: convert USD/gram to a given currency
   const convertTo = (usdPerGram: number, currencyCode: string) => {
     const rate = USD_RATES[currencyCode] ?? 1;
-    return usdPerGram * rate;
+    let converted = usdPerGram * rate;
+
+    // Apply Indian market premium
+    // The international spot price does not include India's Import Duty, AIDC, and GST, 
+    // which together add ~18.7% to the landed retail price of gold and silver in India.
+    if (currencyCode === "INR") {
+      converted = converted * 1.1869;
+    }
+
+    return converted;
   };
 
   return { prices, convertTo };

@@ -58,9 +58,22 @@ const Index = () => {
   const [calculatorInputs, setCalculatorInputs] = useState({
     goldWeight: "",
     goldUnit: "g" as "g" | "tola",
+    goldPurity: 1,
     silverWeight: "",
     silverUnit: "g" as "g" | "tola",
+    silverPurity: 1,
   });
+
+  const GOLD_PURITIES = [
+    { label: "24K (99.9%)", value: 1 },
+    { label: "22K (91.6%)", value: 22 / 24 },
+    { label: "18K (75.0%)", value: 18 / 24 },
+  ];
+
+  const SILVER_PURITIES = [
+    { label: "Fine (99.9%)", value: 1 },
+    { label: "Sterling (92.5%)", value: 0.925 },
+  ];
 
   // Helper Calculator States
   const [cashCalculatorOpen, setCashCalculatorOpen] = useState(false);
@@ -68,6 +81,7 @@ const Index = () => {
 
   const [stockCalculatorOpen, setStockCalculatorOpen] = useState(false);
   const [stockInputs, setStockInputs] = useState({ shares: "", price: "" });
+  const [isMuftiExpanded, setIsMuftiExpanded] = useState(false);
 
   const { prices, convertTo } = useMetalPrices();
   const currency = CURRENCIES.find((c) => c.code === currencyCode)!;
@@ -142,8 +156,16 @@ const Index = () => {
           {goldPerGram != null && (
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-xs">
-                <span className="text-muted-foreground">Gold/g: </span>
+                <span className="text-muted-foreground">Ounce: </span>
+                <span className="text-accent font-semibold">{currency.symbol}{(goldPerGram * 31.1035).toFixed(2)}</span>
+              </span>
+              <span className="text-xs">
+                <span className="text-muted-foreground">24K/g: </span>
                 <span className="text-accent font-semibold">{currency.symbol}{goldPerGram.toFixed(2)}</span>
+              </span>
+              <span className="text-xs">
+                <span className="text-muted-foreground">22K/g: </span>
+                <span className="text-accent font-semibold">{currency.symbol}{(goldPerGram * 22 / 24).toFixed(2)}</span>
               </span>
               {silverPerGram != null && (
                 <span className="text-xs">
@@ -243,8 +265,8 @@ const Index = () => {
                       <div className="mt-3 space-y-3 animate-fade-in-up">
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Gold Weight</label>
-                            <div className="flex gap-2">
+                            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Gold Weight & Purity</label>
+                            <div className="flex gap-2 mb-2">
                               <input
                                 type="number"
                                 min="0"
@@ -262,10 +284,19 @@ const Index = () => {
                                 <option value="tola">Tola</option>
                               </select>
                             </div>
+                            <select
+                              value={calculatorInputs.goldPurity}
+                              onChange={(e) => setCalculatorInputs(prev => ({ ...prev, goldPurity: parseFloat(e.target.value) }))}
+                              className="w-full bg-background border border-navy-border rounded px-2 py-1.5 text-xs text-foreground"
+                            >
+                              {GOLD_PURITIES.map((p) => (
+                                <option key={p.label} value={p.value}>{p.label}</option>
+                              ))}
+                            </select>
                           </div>
                           <div>
-                            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Silver Weight</label>
-                            <div className="flex gap-2">
+                            <label className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1 block">Silver Weight & Purity</label>
+                            <div className="flex gap-2 mb-2">
                               <input
                                 type="number"
                                 min="0"
@@ -283,6 +314,15 @@ const Index = () => {
                                 <option value="tola">Tola</option>
                               </select>
                             </div>
+                            <select
+                              value={calculatorInputs.silverPurity}
+                              onChange={(e) => setCalculatorInputs(prev => ({ ...prev, silverPurity: parseFloat(e.target.value) }))}
+                              className="w-full bg-background border border-navy-border rounded px-2 py-1.5 text-xs text-foreground"
+                            >
+                              {SILVER_PURITIES.map((p) => (
+                                <option key={p.label} value={p.value}>{p.label}</option>
+                              ))}
+                            </select>
                           </div>
                         </div>
 
@@ -292,8 +332,8 @@ const Index = () => {
                             <span className="text-accent font-semibold">
                               {currency.symbol}{
                                 formatAmount(
-                                  ((parseFloat(calculatorInputs.goldWeight) || 0) * (calculatorInputs.goldUnit === 'tola' ? 11.664 : 1) * (goldPerGram || 0)) +
-                                  ((parseFloat(calculatorInputs.silverWeight) || 0) * (calculatorInputs.silverUnit === 'tola' ? 11.664 : 1) * (silverPerGram || 0)),
+                                  ((parseFloat(calculatorInputs.goldWeight) || 0) * (calculatorInputs.goldUnit === 'tola' ? 11.664 : 1) * calculatorInputs.goldPurity * (goldPerGram || 0)) +
+                                  ((parseFloat(calculatorInputs.silverWeight) || 0) * (calculatorInputs.silverUnit === 'tola' ? 11.664 : 1) * calculatorInputs.silverPurity * (silverPerGram || 0)),
                                   "",
                                   currencyCode
                                 )
@@ -302,8 +342,8 @@ const Index = () => {
                           </div>
                           <button
                             onClick={() => {
-                              const goldVal = ((parseFloat(calculatorInputs.goldWeight) || 0) * (calculatorInputs.goldUnit === 'tola' ? 11.664 : 1) * (goldPerGram || 0));
-                              const silverVal = ((parseFloat(calculatorInputs.silverWeight) || 0) * (calculatorInputs.silverUnit === 'tola' ? 11.664 : 1) * (silverPerGram || 0));
+                              const goldVal = ((parseFloat(calculatorInputs.goldWeight) || 0) * (calculatorInputs.goldUnit === 'tola' ? 11.664 : 1) * calculatorInputs.goldPurity * (goldPerGram || 0));
+                              const silverVal = ((parseFloat(calculatorInputs.silverWeight) || 0) * (calculatorInputs.silverUnit === 'tola' ? 11.664 : 1) * calculatorInputs.silverPurity * (silverPerGram || 0));
                               handleAsset("gold", (goldVal + silverVal).toFixed(2));
                             }}
                             className="bg-accent/10 hover:bg-accent/20 text-accent text-xs px-3 py-1.5 rounded transition-colors"
@@ -647,22 +687,69 @@ const Index = () => {
 
         {/* FOOTER NOTE */}
         {/* CONTACT SECTION */}
-        <div className="rounded-xl border border-gold/30 p-4 mb-6 text-center animate-fade-in-up"
+        <div className="rounded-xl border border-gold/30 p-5 mb-6 text-left animate-fade-in-up flex flex-col md:flex-row md:items-start gap-5"
           style={{ background: "linear-gradient(135deg, hsl(222 45% 10%), hsl(222 45% 15%))" }}>
-          <p className="text-foreground/90 text-sm font-medium mb-3">
-            For any query contact <span className="text-accent">Mufti Abdul Qadir</span>
-          </p>
-          <a
-            href="https://wa.me/918268326055?text=Assalamualaikum,%20I%20have%20a%20query%20regarding%20Zakat"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-[#25D366]/20 group"
-          >
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17.472 14.382c-.297-.149-1.758-8.67-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-            </svg>
-            Chat on WhatsApp
-          </a>
+
+          <div className="flex-1">
+            <h3 className="text-accent text-lg font-bold mb-1">Mufti Abdul Qadir Qasmi</h3>
+            <p className="text-foreground/80 text-xs mb-3 font-medium">
+              Islamic Scholar | Specialist in Islamic Law | Arabic Literature Scholar | Imam & Educator
+            </p>
+
+            <div className="text-muted-foreground text-sm space-y-3 leading-relaxed">
+
+              {isMuftiExpanded && (
+                <div className="animate-fade-in-up space-y-3">
+                  <p>
+                    Mufti Abdul Qadir Qasmi is a traditionally trained Islamic scholar who completed his Alimiyyah (Fazilat) from the prestigious Darul Uloom Deoband.
+                  </p>
+                  <p>
+                    He further pursued a Specialisation in Arabic Literature (Adab al-Arabi) and a Specialisation in Islamic Law (Takhassus fi al-Ifta), with advanced training in Fiqh, Usul al-Fiqh, Tafsir, and Hadith.
+                  </p>
+                  <p>
+                    He currently serves as Imam, Khateeb, Mufti, and Qur’anic Exegete at Masjid Aqsa, Akurdi, Pune, where he delivers sermons, provides Islamic legal verdicts (fatwas), and offers religious guidance to the community.
+                  </p>
+                  <p>
+                    In addition, he is a Lecturer at Rizham International School chikhali Pune, actively engaged in integrating Islamic scholarship with contemporary education, focusing on character development, ethical leadership, and balanced religious understanding.
+                  </p>
+                  <div className="bg-navy-elevated/30 p-4 rounded-lg border border-navy-border/50 mt-4">
+                    <p className="text-foreground/80 font-medium mb-2 text-xs uppercase tracking-wider">His areas of expertise include:</p>
+                    <ul className="list-disc pl-5 space-y-1 text-xs">
+                      <li>Islamic Jurisprudence (Fiqh & Fatwa)</li>
+                      <li>Zakat & Financial Rulings</li>
+                      <li>Qur’anic Exegesis (Tafsir)</li>
+                      <li>Arabic Literature</li>
+                      <li>Islamic Education & Community Guidance</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => setIsMuftiExpanded(!isMuftiExpanded)}
+                className="text-accent hover:text-accent/80 text-xs font-medium underline underline-offset-4 mt-2 transition-colors"
+              >
+                {isMuftiExpanded ? "Read Less" : "Read More"}
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-2 md:mt-0 pt-5 md:pt-0 md:pl-5 flex flex-col justify-center border-t md:border-t-0 md:border-l border-gold/20 md:min-w-[180px]">
+            <p className="text-foreground/90 text-sm font-medium mb-3 text-center">
+              For any query contact <span className="text-accent block text-xs mt-0.5">Mufti Abdul Qadir</span>
+            </p>
+            <a
+              href="https://wa.me/918268326055?text=Assalamualaikum,%20I%20have%20a%20query%20regarding%20Zakat"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-[#25D366]/20 group w-full"
+            >
+              <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.472 14.382c-.297-.149-1.758-8.67-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+              </svg>
+              WhatsApp
+            </a>
+          </div>
         </div>
 
         <div className="rounded-xl border border-navy-border p-6 text-center space-y-4" style={{ background: "hsl(var(--navy-card))" }}>
